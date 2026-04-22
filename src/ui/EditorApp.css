@@ -1,0 +1,157 @@
+[data-theme="dark"] {
+  --yoth-bg: #1a1c1e;
+  --yoth-panel: #22262a;
+  --yoth-border: #3a3f45;
+  --yoth-fg: #e6eaef;
+  --yoth-muted: #8b95a0;
+  --yoth-accent: #4a7dbd;
+  --yoth-grid: #2f343a;
+  color-scheme: dark;
+}
+[data-theme="light"] {
+  --yoth-bg: #f4f2ee;
+  --yoth-panel: #fff;
+  --yoth-border: #d8d0c8;
+  --yoth-fg: #1a1a1a;
+  --yoth-muted: #5c5a56;
+  --yoth-accent: #2d5a8a;
+  --yoth-grid: #c8c0b8;
+  color-scheme: light;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: var(--yoth-bg);
+  color: var(--yoth-fg);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
+}
+.yoth-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.yoth-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--yoth-border);
+  background: var(--yoth-panel);
+  align-items: center;
+}
+.yoth-toolbar button {
+  background: var(--yoth-bg);
+  border: 1px solid var(--yoth-border);
+  color: var(--yoth-fg);
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  font: inherit;
+}
+.yoth-toolbar button.is-active,
+.yoth-toolbar button:hover {
+  background: var(--yoth-accent);
+  color: #fff;
+  border-color: var(--yoth-accent);
+}
+.yoth-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.yoth-canvas-wrap {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+  background: #111;
+}
+.yoth-canvas-wrap:focus {
+  outline: none;
+}
+.yoth-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  cursor: crosshair;
+}
+.yoth-sidebar {
+  width: 280px;
+  min-width: 200px;
+  border-left: 1px solid var(--yoth-border);
+  background: var(--yoth-panel);
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  padding: 0.5rem 0.75rem;
+  gap: 0.5rem;
+}
+.yoth-palette {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.yoth-pal-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 12px;
+}
+.yoth-swatch {
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--yoth-border);
+  border-radius: 3px;
+  cursor: pointer;
+}
+.yoth-swatch.is-cur {
+  outline: 2px solid var(--yoth-accent);
+}
+.yoth-dlg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  padding: 1rem;
+}
+.yoth-dlg-box {
+  background: var(--yoth-panel);
+  border: 1px solid var(--yoth-border);
+  border-radius: 8px;
+  padding: 1rem;
+  max-width: 480px;
+  width: 100%;
+}
+.yoth-dlg label {
+  display: block;
+  margin: 0.4rem 0 0.2rem;
+  color: var(--yoth-muted);
+}
+.yoth-dlg input,
+.yoth-dlg select {
+  width: 100%;
+  padding: 0.35rem;
+  border: 1px solid var(--yoth-border);
+  border-radius: 4px;
+  background: var(--yoth-bg);
+  color: var(--yoth-fg);
+}
+pre.yoth-stats {
+  font-size: 11px;
+  margin: 0;
+  color: var(--yoth-muted);
+  white-space: pre-wrap;
+}
