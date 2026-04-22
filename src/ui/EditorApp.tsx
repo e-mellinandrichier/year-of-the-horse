@@ -27,8 +27,8 @@ import {
 import { drawPatternCanvas } from "../render/canvas-draw";
 import { createViewport, screenToGrid, type Viewport, centerPattern } from "../render/viewport";
 import { serializeProject, documentToPattern } from "../core/project-json";
-import { dmcIdToColor, getDmcList } from "../core/dmc";
-import { compositeStitchStats, estimateThreadMetres, stitchesToMm } from "../core/stats";
+import { dmcIdToColor } from "../core/dmc";
+import { compositeStitchStats } from "../core/stats";
 import { copyRegion, parseSelectionFromString, pasteRegion, type SelectionBuffer } from "../core/clipboard";
 import { findIsolatedStitches } from "../core/validation";
 import { applyDmcStringGrid } from "../core/apply-grid";
@@ -80,6 +80,7 @@ export function EditorApp() {
   const [isoMsg, setIsoMsg] = useState("");
   const [gridW, setGridW] = useState(64);
   const [gridH, setGridH] = useState(64);
+  const [pickerColor, setPickerColor] = useState("#000000");
   const lastPatSize = useRef({ w: 64, h: 64 });
 
   const panLast = useRef({ x: 0, y: 0 });
@@ -105,6 +106,13 @@ export function EditorApp() {
       setGridH(pat.current.height);
     }
   }, [renderVersion]);
+
+  useEffect(() => {
+    const cur = pat.current.palette[colorIdx];
+    if (cur) {
+      setPickerColor(dmcIdToColor(cur));
+    }
+  }, [colorIdx]);
 
   const applyZoomAtPoint = useCallback(
     (clientX: number, clientY: number, zoomMultiplier: number) => {
@@ -169,10 +177,19 @@ export function EditorApp() {
   }, [grid, tool, drag, renderVersion]);
 
   const getIdx = (useEraser: boolean) => (useEraser ? 0 : colorIdx);
+  const getActiveColorIndex = useCallback(
+    (p: PatternState): number => {
+      const hex = (pickerColor.startsWith("#") ? pickerColor : `#${pickerColor}`).toLowerCase();
+      const idx = findOrAddPalette(p, hex);
+      if (idx !== colorIdx) setColorIdx(idx);
+      return idx;
+    },
+    [pickerColor, colorIdx]
+  );
 
   const paint = (gx: number, gy: number, er: boolean) => {
     const p = pat.current;
-    const idx = getIdx(er);
+    const idx = er ? getIdx(true) : getActiveColorIndex(p);
     const kind = er ? "full" : stitchKind;
     const pts = mirrorPoints(p.width, p.height, gx, gy, sym);
     for (const q of pts) {
@@ -201,7 +218,7 @@ export function EditorApp() {
     }
     if (tool === "fill" && g.inside) {
       withPat((p) => {
-        floodFill(p, g.x, g.y, getIdx(false), stitchKind);
+        floodFill(p, g.x, g.y, getActiveColorIndex(p), stitchKind);
       });
       return;
     }
@@ -219,7 +236,7 @@ export function EditorApp() {
             y0: backAnchor.current!.y,
             x1: g.x,
             y1: g.y,
-            paletteIndex: colorIdx,
+            paletteIndex: getActiveColorIndex(p),
           })
         );
         backAnchor.current = null;
@@ -280,10 +297,11 @@ export function EditorApp() {
     const g1 = screenToGrid(vp.current, p.width, p.height, d.x1, d.y1, r);
     if (d.kind === "line" && g0.inside && g1.inside) {
       withPat(() => {
+        const drawIdx = getActiveColorIndex(p);
         for (const q of bresenhamLine(g0.x, g0.y, g1.x, g1.y)) {
           for (const m of mirrorPoints(p.width, p.height, q.x, q.y, sym)) {
             if (m.x >= 0 && m.y >= 0 && m.x < p.width && m.y < p.height) {
-              setCell(p, m.x, m.y, colorIdx, stitchKind);
+              setCell(p, m.x, m.y, drawIdx, stitchKind);
             }
           }
         }
@@ -298,16 +316,17 @@ export function EditorApp() {
       const x1 = Math.max(g0.x, g1.x);
       const y1 = Math.max(g0.y, g1.y);
       withPat(() => {
+        const drawIdx = getActiveColorIndex(p);
         if (d.kind === "rect") {
           for (const q of rectOutline(x0, y0, x1, y1)) {
             for (const m of mirrorPoints(p.width, p.height, q.x, q.y, sym)) {
-              setCell(p, m.x, m.y, colorIdx, stitchKind);
+              setCell(p, m.x, m.y, drawIdx, stitchKind);
             }
           }
         } else if (d.kind === "rect_fill") {
           for (const q of rectFillRegion(x0, y0, x1, y1)) {
             for (const m of mirrorPoints(p.width, p.height, q.x, q.y, sym)) {
-              setCell(p, m.x, m.y, colorIdx, stitchKind);
+              setCell(p, m.x, m.y, drawIdx, stitchKind);
             }
           }
         } else {
@@ -318,7 +337,7 @@ export function EditorApp() {
           for (const q of rasterEllipseOutline(cx, cy, Math.max(1, rx), Math.max(1, ry))) {
             for (const m of mirrorPoints(p.width, p.height, q.x, q.y, sym)) {
               if (m.x >= 0 && m.y >= 0 && m.x < p.width && m.y < p.height) {
-                setCell(p, m.x, m.y, colorIdx, stitchKind);
+                setCell(p, m.x, m.y, drawIdx, stitchKind);
               }
             }
           }
@@ -465,11 +484,7 @@ export function EditorApp() {
   }, [onGlobalKey]);
 
   const stats = compositeStitchStats(pat.current);
-  const mmW = stitchesToMm(pat.current.width, fabric);
-  const mmH = stitchesToMm(pat.current.height, fabric);
-  const thr = estimateThreadMetres(stats.total, 2);
-  const dmcList = getDmcList();
-
+  const canUndo = undo.current.canUndo();
   const onImported = useCallback(
     (next: PatternState) => {
       pat.current = next;
@@ -511,6 +526,20 @@ export function EditorApp() {
         />
         <button type="button" onClick={() => void saveFile()}>
           {t("file.save")}
+        </button>
+        <button
+          type="button"
+          disabled={!canUndo}
+          onClick={() => {
+            const u = undo.current.undo(pat.current);
+            if (u) {
+              pat.current = u;
+              refresh();
+            }
+          }}
+          title="Revert last change (Cmd/Ctrl+Z)"
+        >
+          Revert
         </button>
         <button
           type="button"
@@ -658,7 +687,6 @@ export function EditorApp() {
           tabIndex={-1}
           onPointerDown={(e) => {
             lastPointer.current = { x: e.clientX, y: e.clientY };
-            (e.currentTarget as HTMLElement).focus({ preventScroll: true });
           }}
         >
           <canvas
@@ -669,7 +697,6 @@ export function EditorApp() {
             onPointerUp={onUp}
             onPointerEnter={(e) => {
               lastPointer.current = { x: e.clientX, y: e.clientY };
-              wrapRef.current?.focus({ preventScroll: true });
             }}
             onPointerLeave={() => {
               setDrag(null);
@@ -744,7 +771,10 @@ export function EditorApp() {
                     <div
                       className={`yoth-swatch ${colorIdx === i ? "is-cur" : ""}`}
                       style={{ background: dmcIdToColor(id) }}
-                      onClick={() => setColorIdx(i)}
+                      onClick={() => {
+                        setColorIdx(i);
+                        setPickerColor(dmcIdToColor(id));
+                      }}
                       title={id}
                     />
                     {id}
@@ -752,37 +782,16 @@ export function EditorApp() {
                 ))}
             </div>
             <label>
-              Add DMC
-              <select
+              Color
+              <input
+                type="color"
+                value={pickerColor}
                 onChange={(e) => {
-                  const v = e.target.value;
-                  if (v) {
-                    withPat((p) => {
-                      const idx = findOrAddPalette(p, v);
-                      setColorIdx(idx);
-                    });
-                  }
+                  setPickerColor(e.target.value.toLowerCase());
                 }}
-                defaultValue=""
-              >
-                <option value="" disabled>
-                  — pick —
-                </option>
-                {dmcList.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.id} {d.n}
-                  </option>
-                ))}
-              </select>
+                style={{ width: "100%", height: 34, padding: 0, border: "none", background: "transparent" }}
+              />
             </label>
-          </div>
-          <div>
-            <strong>{t("stats.total")}</strong>
-            <pre className="yoth-stats">
-              {stats.total} (~{thr.toFixed(1)}m est.)
-              {"\n"}
-              {t("stats.size")}: {pat.current.width}×{pat.current.height} — {mmW.toFixed(1)}×{mmH.toFixed(1)} mm
-            </pre>
           </div>
           <div>
             <strong>By colour</strong>
