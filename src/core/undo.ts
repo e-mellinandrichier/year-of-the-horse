@@ -12,6 +12,14 @@ export class UndoStack {
   private past: PatternSnapshotUndo[] = [];
   private future: PatternSnapshotUndo[] = [];
 
+  canUndo(): boolean {
+    return this.past.length > 0;
+  }
+
+  canRedo(): boolean {
+    return this.future.length > 0;
+  }
+
   push(p: PatternState) {
     this.past.push({
       pattern: clonePattern(p),

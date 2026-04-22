@@ -15,6 +15,9 @@ export function getDmcById(id: string): DmcEntry | undefined {
 }
 
 export function dmcIdToColor(id: string): string {
+  if (/^#?[0-9a-fA-F]{6}$/.test(id)) {
+    return id.startsWith("#") ? id : `#${id}`;
+  }
   const e = byId.get(id);
   if (!e) return "#888888";
   return `#${e.c}`;
