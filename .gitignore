@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+src-tauri/target/
+
+# Tauri
+src-tauri/gen/
+
+# Local
+app-icon.png
+.DS_Store
+*.log
+
+# IDE
+.env
+.env.*

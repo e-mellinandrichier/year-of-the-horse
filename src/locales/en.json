@@ -1,0 +1,22 @@
+{
+  "app.title": "Year of the Horse",
+  "tools.pencil": "Pencil",
+  "tools.eraser": "Eraser",
+  "tools.fill": "Fill",
+  "tools.line": "Line",
+  "tools.rect": "Rectangle",
+  "tools.ellipse": "Ellipse",
+  "tools.select": "Select",
+  "tools.backstitch": "Backstitch",
+  "file.new": "New",
+  "file.open": "Open",
+  "file.save": "Save",
+  "file.exportPng": "Export PNG",
+  "file.exportPdf": "Export PDF",
+  "view.grid": "Grid",
+  "import.title": "Import image",
+  "import.apply": "Apply",
+  "import.preview": "Preview",
+  "stats.total": "Total stitches",
+  "stats.size": "Size (stitches / mm)"
+}
