@@ -1,3 +1,4 @@
+// Test commit: verify no Co-authored-by trailer
 import { getDmcById, getDmcList } from "./dmc";
 
 function srgbToLin(c: number) {
